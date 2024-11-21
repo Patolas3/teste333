@@ -136,3 +136,13 @@ local KillAll = Divider:Button{
        end)
    end
 }
+
+-- Adicionar um botão para fechar o script ao clicar em "Quit"
+local QuitButton = QuitDivider:Button{
+   Name = "Quit",
+   Description = "Fecha o script",
+   Callback = function()
+       -- Fechar o script
+       game:Shutdown() -- Função para fechar o script
+   end
+}
