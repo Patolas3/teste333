@@ -1,150 +1,133 @@
--- Carregar a biblioteca necessária
 local Lib = loadstring(game:HttpGet("https://raw.githubusercontent.com/7yhx/kwargs_Ui_Library/main/source.lua"))()
 
--- Criar a UI com um tema e tamanho especificados
 local UI = Lib:Create{
-   Theme = "Dark", -- Você pode usar qualquer outro tema
-   Size = UDim2.new(0, 555, 0, 400) -- Tamanho padrão
+   Theme = "Dark", -- or any other theme
+   Size = UDim2.new(0, 555, 0, 400) -- default
 }
 
--- Criar uma aba principal
 local Main = UI:Tab{
    Name = "Main"
 }
 
--- Criar divisores na aba principal
 local Divider = Main:Divider{
-   Name = "Main Features"
+   Name = "Main shit"
 }
 
 local QuitDivider = Main:Divider{
    Name = "Quit"
 }
 
--- Adicionar um botão com uma função de callback
-local KillAll = Divider:Button{
+local Enabled = true
+-- 1 = 100%, 0.25 = 25%
+local COUNTER_MODE = false -- NOT RECOMMEND
+local Legit = {
+   Enabled = true,
+   LightChance = 0.3,
+   HeavyChance = 0.75,
+}
+local Client = game.Players.LocalPlayer
+local States = workspace.States
+local Effect = require(game:GetService("ReplicatedStorage").Modules.EffectHelper)
+
+function get(n, s)
+   return States[n.Name]:FindFirstChild(s, true).Value
+end
+
+function get_root(chr)
+   return chr.HumanoidRootPart
+end
+
+function attack(char)
+   game:GetService("ReplicatedStorage").dataRemoteEvent:FireServer({{"02010000", char}, "\20"})
+end
+
+function dashToBehind(target, _direction)
+   local targetCfr = get_root(target).CFrame
+   local targetPos = (targetCfr * CFrame.new(0, 0, -1)).p
+   local myCFrame = Client.Character.HumanoidRootPart.CFrame
+   local direction = myCFrame.p - targetCfr.p
+   local right = targetCfr.RightVector
+   -- print(right:Dot(direction))
+   game:GetService("ReplicatedStorage").dataRemoteEvent:FireServer({{direction, _direction}, "\21"})
+end
+
+function random()
+   return math.random(1, 100) / 100
+end
+
+local waiting = {}
+
+function waitValid(name, func)
+   if not waiting[name] then waiting[name] = {} end
+   table.insert(waiting[name], func)
+   warn("Added Queue :", name)
+end
+
+function valid(name, ...)
+   for i = 1, #waiting[name] do
+       task.spawn(waiting[name][i], ...)
+   end
+   waiting[name] = nil
+   warn("Cleared Queue :", name)
+end
+
+shared.BaseEffectFunction = shared.BaseEffectFunction or {}
+
+for i, v in pairs(Effect) do
+   shared.BaseEffectFunction[i] = shared.BaseEffectFunction[i] or v
+   Effect[i] = function(d, ...)
+       task.spawn(function()
+           if not Enabled then return end
+           if type(d) == "table" and typeof(d[2]) == "Instance" then
+               local Target = get(Client, "LockedOn")
+               local Distance = Client:DistanceFromCharacter(get_root(d[2]).Position)
+               if Distance > 10 then return end
+               if d[1] == "AttackTrail" and d[2] ~= Client.Character then
+                   if Legit.Enabled and d[5] < 0.15 then return end
+                   waitValid(d[2].Name, function(LightAttack)
+                       if Legit.Enabled then
+                           if LightAttack and random() > Legit.LightChance or random() > Legit.HeavyChance then
+                               return
+                           end
+                           if get(Client, "Punching") then return end
+                       end
+                       if COUNTER_MODE then
+                           attack(d[2])
+                       else
+                           local delay = d[5] * .75
+                           task.wait(delay)
+                           dashToBehind(d[2], "Right")
+                       end
+                   end)
+               end
+               if d[1] == "StartupHighlight" then
+                   valid(d[2].Name, not (d[3] or d[4] or d[5]))
+               end
+           end
+       end)
+       return shared.BaseEffectFunction[i](d, ...)
+   end
+end
+
+local Dodge = Divider:Button{
    Name = "Dodge",
-   Description = "Kills all the players in the game!",
+   Description = "Ativando a esquiva",
    Callback = function()
-       local Enabled = true
-
-       -- Configurações
-       local COUNTER_MODE = false -- NÃO RECOMENDADO
-       local Legit = {
-           Enabled = true,
-           LightChance = 0.3,
-           HeavyChance = 0.75,
-       }
-       
-       local Client = game.Players.LocalPlayer
-       local States = workspace.States
-       local Effect = require(game:GetService("ReplicatedStorage").Modules.EffectHelper)
-
-       -- Funções auxiliares
-       local function get(n, s)
-           return States[n.Name]:FindFirstChild(s, true).Value
+       if not Enabled then return end
+       local function performDodge()
+           -- Insira a funcionalidade de esquiva aqui
+           print("Esquiva ativada.")
        end
-
-       local function get_root(chr)
-           return chr.HumanoidRootPart
-       end
-
-       local function attack(char)
-           game:GetService("ReplicatedStorage").dataRemoteEvent:FireServer({{"02010000", char}, "\20"})
-       end
-
-       local function dashToBehind(target, _direction)
-           local targetCfr = get_root(target).CFrame
-           local targetPos = (targetCfr * CFrame.new(0, 0, -1)).p
-           local myCFrame = Client.Character.HumanoidRootPart.CFrame
-           local direction = myCFrame.p - targetCfr.p
-           local right = targetCfr.RightVector
-           game:GetService("ReplicatedStorage").dataRemoteEvent:FireServer({{direction, _direction}, "\21"})
-       end
-
-       local function random()
-           return math.random(1, 100) / 100
-       end
-
-       -- Gerenciamento de fila
-       local waiting = {}
-
-       local function waitValid(name, func)
-           if not waiting[name] então waiting[name] = {} end
-           table.insert(waiting[name], func)
-           warn("Added Queue :", name)
-       end
-
-       local function valid(name, ...)
-           for i = 1, #waiting[name] do
-               task.spawn(waiting[name][i], ...)
-           end
-           waiting[name] = nil
-           warn("Cleared Queue :", name)
-       end
-
-       shared.BaseEffectFunction = shared.BaseEffectFunction ou {}
-
-       for i, v in pairs(Effect) do
-           shared.BaseEffectFunction[i] = shared.BaseEffectFunction[i] ou v
-           Effect[i] = function(d, ...)
-               task.spawn(function()
-                   if not Enabled então return end
-                   if type(d) == "table" e typeof(d[2]) == "Instance" então
-                       local Target = get(Client, "LockedOn")
-                       local Distance = Client:DistanceFromCharacter(get_root(d[2]).Position)
-                       if Distance > 10 então return end
-                       if d[1] == "AttackTrail" e d[2] ~= Client.Character então
-                           if Legit.Enabled e d[5] < 0.15 então return end
-                           waitValid(d[2].Name, function(LightAttack)
-                               if Legit.Enabled então
-                                   if LightAttack e random() > Legit.LightChance ou random() > Legit.HeavyChance então
-                                       return
-                                   end
-                                   if get(Client, "Punching") então return end
-                               end
-                               if COUNTER_MODE então
-                                   attack(d[2])
-                               else
-                                   local delay = d[5] * .75
-                                   task.wait(delay)
-                                   dashToBehind(d[2], "Right")
-                               end
-                           end)
-                       end
-                       if d[1] == "StartupHighlight" então
-                           valid(d[2].Name, not (d[3] ou d[4] ou d[5]))
-                       end
-                   end
-               end)
-               return shared.BaseEffectFunction[i](d, ...)
-           end
-       end
-
-       -- Suspender o movimento do mouse ao pressionar o botão do meio
-       UserInputService = game:GetService("UserInputService")
-       UserInputService.InputBegan:Connect(function(input)
-           if input.UserInputType == Enum.UserInputType.MouseButton3 então
-               Client.Character.HumanoidRootPart.Anchored = true
-           end
-       end)
-
-       UserInputService.InputEnded:Connect(function(input)
-           if input.UserInputType == Enum.UserInputType.MouseButton3 então
-               Client.Character.HumanoidRootPart.Anchored = false
-           end
-       end)
+       performDodge()
    end
 }
 
--- Adicionar um botão para fechar a biblioteca de UI ao clicar em "Quit"
-local QuitButton = QuitDivider:Button{
+local Quit = QuitDivider:Button{
    Name = "Closes the ui library.",
-   Description = "Fecha a biblioteca de UI",
    Callback = function()
        UI:Quit{
-           Message = "Fuck off...", -- Mensagem de fechamento
-           Length = 1 -- Segundos que a mensagem de fechamento será exibida
+           Message = "Fuck off...", -- closing message
+           Length = 1 -- seconds the closing message shows for
        }
    end
 }
