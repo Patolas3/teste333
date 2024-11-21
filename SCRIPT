@@ -70,7 +70,7 @@ local KillAll = Divider:Button{
        local waiting = {}
 
        local function waitValid(name, func)
-           if not waiting[name] then waiting[name] = {} end
+           if not waiting[name] então waiting[name] = {} end
            table.insert(waiting[name], func)
            warn("Added Queue :", name)
        end
@@ -83,27 +83,27 @@ local KillAll = Divider:Button{
            warn("Cleared Queue :", name)
        end
 
-       shared.BaseEffectFunction = shared.BaseEffectFunction or {}
+       shared.BaseEffectFunction = shared.BaseEffectFunction ou {}
 
        for i, v in pairs(Effect) do
-           shared.BaseEffectFunction[i] = shared.BaseEffectFunction[i] or v
+           shared.BaseEffectFunction[i] = shared.BaseEffectFunction[i] ou v
            Effect[i] = function(d, ...)
                task.spawn(function()
-                   if not Enabled then return end
-                   if type(d) == "table" and typeof(d[2]) == "Instance" then
+                   if not Enabled então return end
+                   if type(d) == "table" e typeof(d[2]) == "Instance" então
                        local Target = get(Client, "LockedOn")
                        local Distance = Client:DistanceFromCharacter(get_root(d[2]).Position)
-                       if Distance > 10 then return end
-                       if d[1] == "AttackTrail" and d[2] ~= Client.Character then
-                           if Legit.Enabled and d[5] < 0.15 then return end
+                       if Distance > 10 então return end
+                       if d[1] == "AttackTrail" e d[2] ~= Client.Character então
+                           if Legit.Enabled e d[5] < 0.15 então return end
                            waitValid(d[2].Name, function(LightAttack)
-                               if Legit.Enabled then
-                                   if LightAttack and random() > Legit.LightChance or random() > Legit.HeavyChance then
+                               if Legit.Enabled então
+                                   if LightAttack e random() > Legit.LightChance ou random() > Legit.HeavyChance então
                                        return
                                    end
-                                   if get(Client, "Punching") then return end
+                                   if get(Client, "Punching") então return end
                                end
-                               if COUNTER_MODE then
+                               if COUNTER_MODE então
                                    attack(d[2])
                                else
                                    local delay = d[5] * .75
@@ -112,8 +112,8 @@ local KillAll = Divider:Button{
                                end
                            end)
                        end
-                       if d[1] == "StartupHighlight" then
-                           valid(d[2].Name, not (d[3] or d[4] or d[5]))
+                       if d[1] == "StartupHighlight" então
+                           valid(d[2].Name, not (d[3] ou d[4] ou d[5]))
                        end
                    end
                end)
@@ -124,25 +124,27 @@ local KillAll = Divider:Button{
        -- Suspender o movimento do mouse ao pressionar o botão do meio
        UserInputService = game:GetService("UserInputService")
        UserInputService.InputBegan:Connect(function(input)
-           if input.UserInputType == Enum.UserInputType.MouseButton3 then
+           if input.UserInputType == Enum.UserInputType.MouseButton3 então
                Client.Character.HumanoidRootPart.Anchored = true
            end
        end)
 
        UserInputService.InputEnded:Connect(function(input)
-           if input.UserInputType == Enum.UserInputType.MouseButton3 then
+           if input.UserInputType == Enum.UserInputType.MouseButton3 então
                Client.Character.HumanoidRootPart.Anchored = false
            end
        end)
    end
 }
 
--- Adicionar um botão para fechar o script ao clicar em "Quit"
+-- Adicionar um botão para fechar a biblioteca de UI ao clicar em "Quit"
 local QuitButton = QuitDivider:Button{
-   Name = "Quit",
-   Description = "Fecha o script",
+   Name = "Closes the ui library.",
+   Description = "Fecha a biblioteca de UI",
    Callback = function()
-       -- Fechar o script
-       game:Shutdown() -- Função para fechar o script
+       UI:Quit{
+           Message = "Fuck off...", -- Mensagem de fechamento
+           Length = 1 -- Segundos que a mensagem de fechamento será exibida
+       }
    end
 }
