@@ -1,0 +1,194 @@
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local LocalPlayer = Players.LocalPlayer
+local Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+local HumanoidRootPart = Character:WaitForChild("HumanoidRootPart")
+local Workspace = game:GetService("Workspace")
+local UserInputService = game:GetService("UserInputService")
+
+-- Ocultar o cursor do mouse
+UserInputService.MouseIconEnabled = false
+
+-- Function to update the Character and HumanoidRootPart reference
+local function onCharacterAdded(character)
+    Character = character
+    HumanoidRootPart = Character:WaitForChild("HumanoidRootPart")
+end
+
+-- Connect to CharacterAdded event
+LocalPlayer.CharacterAdded:Connect(onCharacterAdded)
+
+-- Create GUI
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "PersistentScreenGui"
+screenGui.ResetOnSpawn = false
+screenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+local frame = Instance.new("Frame", screenGui)
+frame.Size = UDim2.new(0, 250, 0, 250)
+frame.Position = UDim2.new(0, 10, 0, 10)
+frame.BackgroundColor3 = Color3.new(0.5, 0.5, 0.5)
+frame.Active = true
+frame.Draggable = true
+
+local onButton = Instance.new("TextButton", frame)
+onButton.Size = UDim2.new(0, 60, 0, 30)
+onButton.Position = UDim2.new(0, 10, 0, 10)
+onButton.Text = "On"
+onButton.BackgroundColor3 = Color3.new(1, 0, 0)  -- Red color initially
+
+local offButton = Instance.new("TextButton", frame)
+offButton.Size = UDim2.new(0, 60, 0, 30)
+offButton.Position = UDim2.new(0, 80, 0, 10)
+offButton.Text = "Off"
+offButton.BackgroundColor3 = Color3.new(1, 0, 0)  -- Red color initially
+
+local destroyButton = Instance.new("TextButton", frame)
+destroyButton.Size = UDim2.new(0, 30, 0, 30)
+destroyButton.Position = UDim2.new(0, 150, 0, 10)
+destroyButton.Text = "X"
+
+local withinLabel = Instance.new("TextLabel", frame)
+withinLabel.Size = UDim2.new(0, 100, 0, 30)
+withinLabel.Position = UDim2.new(0, 10, 0, 50)
+withinLabel.Text = "Within Studs: 10"
+
+local teleportLabel = Instance.new("TextLabel", frame)
+teleportLabel.Size = UDim2.new(0, 100, 0, 30)
+teleportLabel.Position = UDim2.new(0, 10, 0, 90)
+teleportLabel.Text = "Teleport Studs: 10"
+
+local withinPlus = Instance.new("TextButton", frame)
+withinPlus.Size = UDim2.new(0, 30, 0, 30)
+withinPlus.Position = UDim2.new(0, 120, 0, 50)
+withinPlus.Text = "+"
+
+local withinMinus = Instance.new("TextButton", frame)
+withinMinus.Size = UDim2.new(0, 30, 0, 30)
+withinMinus.Position = UDim2.new(0, 160, 0, 50)
+withinMinus.Text = "-"
+
+local teleportPlus = Instance.new("TextButton", frame)
+teleportPlus.Size = UDim2.new(0, 30, 0, 30)
+teleportPlus.Position = UDim2.new(0, 120, 0, 90)
+teleportPlus.Text = "+"
+
+local teleportMinus = Instance.new("TextButton", frame)
+teleportMinus.Size = UDim2.new(0, 30, 0, 30)
+teleportMinus.Position = UDim2.new(0, 160, 0, 90)
+teleportMinus.Text = "-"
+
+local enableRaycastLabel = Instance.new("TextLabel", frame)
+enableRaycastLabel.Size = UDim2.new(0, 100, 0, 30)
+enableRaycastLabel.Position = UDim2.new(0, 10, 0, 130)
+enableRaycastLabel.Text = "Dodging Mode: Off"
+
+local enableRaycastButton = Instance.new("TextButton", frame)
+enableRaycastButton.Size = UDim2.new(0, 80, 0, 30)
+enableRaycastButton.Position = UDim2.new(0, 120, 0, 130)
+enableRaycastButton.Text = "Toggle Dodging"
+enableRaycastButton.BackgroundColor3 = Color3.new(1, 0, 0)  -- Red color initially
+
+-- Botão de Ocultar/Reaparecer GUI
+local toggleGUIButton = Instance.new("TextButton", frame)
+toggleGUIButton.Size = UDim2.new(0, 100, 0, 30)
+toggleGUIButton.Position = UDim2.new(0, 75, 0, 170)
+toggleGUIButton.Text = "Toggle GUI"
+
+local buttons = {onButton, offButton, destroyButton, withinPlus, withinMinus, teleportPlus, teleportMinus, enableRaycastButton, toggleGUIButton}
+
+local function setButtonsEnabled(enabled)
+    for _, button in ipairs(buttons) do
+        button.Active = enabled
+    end
+end
+
+local active = false
+local withinStuds = 10
+local teleportStuds = 10
+local minTeleportStuds = 10  -- Minimum teleport distance
+local raycastEnabled = false  -- Raycast toggle state
+local guiVisible = true  -- Estado de visibilidade da GUI
+
+local function isSafePosition(position)
+    local raycastParams = RaycastParams.new()
+    raycastParams.FilterDescendantsInstances = {Character}
+    raycastParams.FilterType = Enum.RaycastFilterType.Blacklist
+
+    local raycastResult = Workspace:Raycast(position, Vector3.new(0, -100, 0), raycastParams)
+    return raycastResult and raycastResult.Position and raycastResult.Position.Y < position.Y
+end
+
+local function getSafeTeleportPosition(playerHumanoidRootPart)
+    local angleIncrement = math.pi / 8  -- 22.5 degrees per step (16 checks for a full circle)
+    local radius = teleportStuds
+    local raycastParams = RaycastParams.new()
+    raycastParams.FilterDescendantsInstances = {Character}
+    raycastParams.FilterType = Enum.RaycastFilterType.Blacklist
+
+    for i = 0, 15 do
+        local angle = i * angleIncrement
+        local direction = Vector3.new(math.cos(angle), 0, math.sin(angle))
+        local targetPosition = playerHumanoidRootPart.Position + direction * radius
+        local raycastResult = Workspace:Raycast(playerHumanoidRootPart.Position, targetPosition - playerHumanoidRootPart.Position, raycastParams)
+
+        if not raycastResult then
+            return targetPosition  -- Return the first safe position found
+        end
+    end
+
+    return nil
+end
+
+local function isFacingTarget(otherHumanoidRootPart)
+    local directionToOtherPlayer = (otherHumanoidRootPart.Position - HumanoidRootPart.Position).unit
+    local facingDirection = HumanoidRootPart.CFrame.LookVector
+    local dotProduct = facingDirection:Dot(directionToOtherPlayer)
+    return dotProduct > 0.99
+end
+
+local function avoidPlayers()
+    if not active then return end
+
+    for _, player in pairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+            local otherHumanoidRootPart = player.Character.HumanoidRootPart
+            local distance = (HumanoidRootPart.Position - otherHumanoidRootPart.Position).Magnitude
+            if distance < withinStuds and isFacingTarget(otherHumanoidRootPart) then
+                local newPosition
+                if raycastEnabled then
+                    newPosition = getSafeTeleportPosition(otherHumanoidRootPart)
+                else
+                    newPosition = otherHumanoidRootPart.Position - (HumanoidRootPart.Position - otherHumanoidRootPart.Position).unit * teleportStuds
+                end
+
+                if newPosition and isSafePosition(newPosition) then
+                    HumanoidRootPart.CFrame = CFrame.new(newPosition)
+                end
+            end
+        end
+    end
+end
+
+onButton.MouseButton1Click:Connect(function()
+    active = true
+    onButton.BackgroundColor3 = Color3.new(0, 1, 0)
+    offButton.BackgroundColor3 = Color3.new(1, 0, 0)
+    setButtonsEnabled(false)  -- Disable buttons
+end)
+
+offButton.MouseButton1Click:Connect(function()
+    active = false
+    onButton.BackgroundColor3 = Color3.new(1, 0, 0)
+    offButton.BackgroundColor3 = Color3.new(0, 1, 0)
+    setButtonsEnabled(true)  -- Enable buttons
+end)
+
+destroyButton.MouseButton1Click:Connect(function()
+    active = false
+    raycastEnabled = false
+    screenGui:Destroy()
+    setButtonsEnabled(true)  -- Re-enable buttons in case GUI is recreated
+end)
+
+withinPlus.MouseButton1Click:Connect(function()
+    within
