@@ -1,197 +1,113 @@
-local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
-local LocalPlayer = Players.LocalPlayer
-local Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
-local HumanoidRootPart = Character:WaitForChild("HumanoidRootPart")
-local Workspace = game:GetService("Workspace")
+local Lib = loadstring(game:HttpGet("https://raw.githubusercontent.com/7yhx/kwargs_Ui_Library/main/source.lua"))()
 
--- Function to update the Character and HumanoidRootPart reference
-local function onCharacterAdded(character)
-    Character = character
-    HumanoidRootPart = Character:WaitForChild("HumanoidRootPart")
-end
+local UI = Lib:Create{
+   Theme = "Dark",
+   Size = UDim2.new(0, 555, 0, 400)
+}
 
--- Connect to CharacterAdded event
-LocalPlayer.CharacterAdded:Connect(onCharacterAdded)
+local Main = UI:Tab{
+   Name = "Main"
+}
 
--- Create GUI
-local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "PersistentScreenGui"
-screenGui.ResetOnSpawn = false
-screenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
-local frame = Instance.new("Frame", screenGui)
-frame.Size = UDim2.new(0, 250, 0, 250)
-frame.Position = UDim2.new(0, 10, 0, 10)
-frame.BackgroundColor3 = Color3.new(0.5, 0.5, 0.5)
-frame.Active = true
-frame.Draggable = true
+local Divider = Main:Divider{
+   Name = "Dodge"
+}
 
-local onButton = Instance.new("TextButton", frame)
-onButton.Size = UDim2.new(0, 60, 0, 30)
-onButton.Position = UDim2.new(0, 10, 0, 10)
-onButton.Text = "On"
-onButton.BackgroundColor3 = Color3.new(1, 0, 0)  -- Red color initially
+local QuitDivider = Main:Divider{
+   Name = "Quit"
+}
 
-local offButton = Instance.new("TextButton", frame)
-offButton.Size = UDim2.new(0, 60, 0, 30)
-offButton.Position = UDim2.new(0, 80, 0, 10)
-offButton.Text = "Off"
-offButton.BackgroundColor3 = Color3.new(1, 0, 0)  -- Red color initially
+-- Function to execute when the Dodge button is pressed
+local function onDodgeButtonPressed()
+   local Enabled = true
+   local COUNTER_MODE = false -- NOT RECOMMENDED
+   local Legit = {
+      Enabled = true,
+      LightChance = 0.3,
+      HeavyChance = 0.75,
+   }
+   local Client = game.Players.LocalPlayer
+   local States = workspace.States
+   local Effect = require(game:GetService("ReplicatedStorage").Modules.EffectHelper)
 
-local destroyButton = Instance.new("TextButton", frame)
-destroyButton.Size = UDim2.new(0, 30, 0, 30)
-destroyButton.Position = UDim2.new(0, 150, 0, 10)
-destroyButton.Text = "X"
+   function get(n, s)
+      return States[n.Name]:FindFirstChild(s, true).Value
+   end
 
-local withinLabel = Instance.new("TextLabel", frame)
-withinLabel.Size = UDim2.new(0, 100, 0, 30)
-withinLabel.Position = UDim2.new(0, 10, 0, 50)
-withinLabel.Text = "Within Studs: 10"
+   function get_root(chr)
+      return chr.HumanoidRootPart
+   end
 
-local teleportLabel = Instance.new("TextLabel", frame)
-teleportLabel.Size = UDim2.new(0, 100, 0, 30)
-teleportLabel.Position = UDim2.new(0, 10, 0, 90)
-teleportLabel.Text = "Teleport Studs: 10"
+   function attack(char)
+      game:GetService("ReplicatedStorage").dataRemoteEvent:FireServer({{"02010000", char}, "\20"})
+   end
 
-local withinPlus = Instance.new("TextButton", frame)
-withinPlus.Size = UDim2.new(0, 30, 0, 30)
-withinPlus.Position = UDim2.new(0, 120, 0, 50)
-withinPlus.Text = "+"
+   function dashToBehind(target, _direction)
+      local targetCfr = get_root(target).CFrame
+      local targetPos = (targetCfr * CFrame.new(0, 0, -1)).p
+      local myCFrame = Client.Character.HumanoidRootPart.CFrame
+      local direction = myCFrame.p - targetCfr.p
+      local right = targetCfr.RightVector
+      game:GetService("ReplicatedStorage").dataRemoteEvent:FireServer({{direction, _direction}, "\21"})
+   end
 
-local withinMinus = Instance.new("TextButton", frame)
-withinMinus.Size = UDim2.new(0, 30, 0, 30)
-withinMinus.Position = UDim2.new(0, 160, 0, 50)
-withinMinus.Text = "-"
+   function random()
+      return math.random(1, 100) / 100
+   end
 
-local teleportPlus = Instance.new("TextButton", frame)
-teleportPlus.Size = UDim2.new(0, 30, 0, 30)
-teleportPlus.Position = UDim2.new(0, 120, 0, 90)
-teleportPlus.Text = "+"
+   local waiting = {}
 
-local teleportMinus = Instance.new("TextButton", frame)
-teleportMinus.Size = UDim2.new(0, 30, 0, 30)
-teleportMinus.Position = UDim2.new(0, 160, 0, 90)
-teleportMinus.Text = "-"
+   function waitValid(name, func)
+      if not waiting[name] then waiting[name] = {} end
+      table.insert(waiting[name], func)
+      warn("Added Queue :", name)
+   end
 
-local enableRaycastLabel = Instance.new("TextLabel", frame)
-enableRaycastLabel.Size = UDim2.new(0, 100, 0, 30)
-enableRaycastLabel.Position = UDim2.new(0, 10, 0, 130)
-enableRaycastLabel.Text = "Dodging Mode: Off"
+   function valid(name, ...)
+      for i = 1, #waiting[name] do
+         task.spawn(waiting[name][i], ...)
+      end
+      waiting[name] = nil
+      warn("Cleared Queue :", name)
+   end
 
-local enableRaycastButton = Instance.new("TextButton", frame)
-enableRaycastButton.Size = UDim2.new(0, 80, 0, 30)
-enableRaycastButton.Position = UDim2.new(0, 120, 0, 130)
-enableRaycastButton.Text = "Toggle Dodging"
-enableRaycastButton.BackgroundColor3 = Color3.new(1, 0, 0)  -- Red color initially
-
-local active = false
-local withinStuds = 10
-local teleportStuds = 10
-local minTeleportStuds = 3  -- Minimum teleport distance
-local raycastEnabled = false  -- Raycast toggle state
-
-local function isSafePosition(position)
-    local raycastParams = RaycastParams.new()
-    raycastParams.FilterDescendantsInstances = {Character}
-    raycastParams.FilterType = Enum.RaycastFilterType.Blacklist
-
-    local raycastResult = Workspace:Raycast(position, Vector3.new(0, -100, 0), raycastParams)
-    return raycastResult and raycastResult.Position and raycastResult.Position.Y < position.Y
-end
-
-local function getSafeTeleportPosition(playerHumanoidRootPart)
-    local angleIncrement = math.pi / 8  -- 22.5 degrees per step (16 checks for a full circle)
-    local radius = teleportStuds
-    local raycastParams = RaycastParams.new()
-    raycastParams.FilterDescendantsInstances = {Character}
-    raycastParams.FilterType = Enum.RaycastFilterType.Blacklist
-
-    for i = 0, 15 do
-        local angle = i * angleIncrement
-        local direction = Vector3.new(math.cos(angle), 0, math.sin(angle))
-        local targetPosition = playerHumanoidRootPart.Position + direction * radius
-        local raycastResult = Workspace:Raycast(playerHumanoidRootPart.Position, targetPosition - playerHumanoidRootPart.Position, raycastParams)
-
-        if not raycastResult then
-            return targetPosition  -- Return the first safe position found
-        end
-    end
-
-    return nil
-end
-
-local function isFacingTarget(otherHumanoidRootPart)
-    local directionToOtherPlayer = (otherHumanoidRootPart.Position - HumanoidRootPart.Position).unit
-    local facingDirection = HumanoidRootPart.CFrame.LookVector
-    local dotProduct = facingDirection:Dot(directionToOtherPlayer)
-    return dotProduct > 0.99
-end
-
-local function avoidPlayers()
-    if not active then return end
-
-    for _, player in pairs(Players:GetPlayers()) do
-        if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-            local otherHumanoidRootPart = player.Character.HumanoidRootPart
-            local distance = (HumanoidRootPart.Position - otherHumanoidRootPart.Position).Magnitude
-            if distance < withinStuds and isFacingTarget(otherHumanoidRootPart) then
-                local newPosition
-                if raycastEnabled then
-                    newPosition = getSafeTeleportPosition(otherHumanoidRootPart)
-                else
-                    newPosition = otherHumanoidRootPart.Position - (HumanoidRootPart.Position - otherHumanoidRootPart.Position).unit * teleportStuds
-                end
-
-                if newPosition and isSafePosition(newPosition) then
-                    HumanoidRootPart.CFrame = CFrame.new(newPosition)
-                end
+   shared.BaseEffectFunction = shared.BaseEffectFunction or {}
+   for i, v in pairs(Effect) do
+      shared.BaseEffectFunction[i] = shared.BaseEffectFunction[i] or v
+      Effect[i] = function(d, ...)
+         task.spawn(function()
+            if not Enabled then return end
+            if type(d) == "table" and typeof(d[2]) == "Instance" then
+               local Target = get(Client, "LockedOn")
+               local Distance = Client:DistanceFromCharacter(get_root(d[2]).Position)
+               if Distance > 10 then return end
+               if d[1] == "AttackTrail" and d[2] ~= Client.Character then
+                  if Legit.Enabled and d[5] < 0.15 then return end
+                  waitValid(d[2].Name, function(LightAttack)
+                     if Legit.Enabled then
+                        if LightAttack and random() > Legit.LightChance or random() > Legit.HeavyChance then
+                           return
+                        end
+                        if get(Client, "Punching") then return end
+                     end
+                     if COUNTER_MODE then
+                        attack(d[2])
+                     else
+                        local delay = d[5] * .75
+                        task.wait(delay)
+                        dashToBehind(d[2], "Right")
+                     end
+                  end)
+               end
+               if d[1] == "StartupHighlight" then
+                  valid(d[2].Name, not (d[3] or d[4] or d[5]))
+               end
             end
-        end
-    end
+         end)
+         return shared.BaseEffectFunction[i](d, ...)
+      end
+   end
 end
 
-onButton.MouseButton1Click:Connect(function()
-    active = true
-    onButton.BackgroundColor3 = Color3.new(0, 1, 0)
-    offButton.BackgroundColor3 = Color3.new(1, 0, 0)
-end)
-
-offButton.MouseButton1Click:Connect(function()
-    active = false
-    onButton.BackgroundColor3 = Color3.new(1, 0, 0)
-    offButton.BackgroundColor3 = Color3.new(0, 1, 0)
-end)
-
-destroyButton.MouseButton1Click:Connect(function()
-    active = false
-    raycastEnabled = false
-    screenGui:Destroy()
-end)
-
-withinPlus.MouseButton1Click:Connect(function()
-    withinStuds = withinStuds + 1
-    withinLabel.Text = "Within Studs: " .. withinStuds
-end)
-
-withinMinus.MouseButton1Click:Connect(function()
-    withinStuds = math.max(1, withinStuds - 1)
-    withinLabel.Text = "Within Studs: " .. withinStuds
-end)
-
-teleportPlus.MouseButton1Click:Connect(function()
-    teleportStuds = teleportStuds + 1
-    teleportLabel.Text = "Teleport Studs: " .. teleportStuds
-end)
-
-teleportMinus.MouseButton1Click:Connect(function()
-    teleportStuds = math.max(minTeleportStuds, teleportStuds - 1)
-    teleportLabel.Text = "Teleport Studs: " .. teleportStuds
-end)
-
-enableRaycastButton.MouseButton1Click:Connect(function()
-    raycastEnabled = not raycastEnabled
-    enableRaycastButton.BackgroundColor3 = raycastEnabled and Color3.new(0, 1, 0) or Color3.new(1, 0, 0)
-    enableRaycastLabel.Text = "Dodging Mode: " .. (raycastEnabled and "On" or "Off")
-end)
-
-RunService.Stepped:Connect(avoidPlayers)
+-- Connect the Dodge button to the function
+Divider.Button.MouseButton1Click:Connect(onDodgeButtonPressed)
