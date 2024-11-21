@@ -1,18 +1,18 @@
--- Load the required library
+-- Carregar a biblioteca necessária
 local Lib = loadstring(game:HttpGet("https://raw.githubusercontent.com/7yhx/kwargs_Ui_Library/main/source.lua"))()
 
--- Create the UI with a specified theme and size
+-- Criar a UI com um tema e tamanho especificados
 local UI = Lib:Create{
-   Theme = "Dark", -- You can use any other theme
-   Size = UDim2.new(0, 555, 0, 400) -- Default size
+   Theme = "Dark", -- Você pode usar qualquer outro tema
+   Size = UDim2.new(0, 555, 0, 400) -- Tamanho padrão
 }
 
--- Create a main tab
+-- Criar uma aba principal
 local Main = UI:Tab{
    Name = "Main"
 }
 
--- Create dividers within the main tab
+-- Criar divisores na aba principal
 local Divider = Main:Divider{
    Name = "Main Features"
 }
@@ -21,15 +21,15 @@ local QuitDivider = Main:Divider{
    Name = "Quit"
 }
 
--- Add a button with a callback function
+-- Adicionar um botão com uma função de callback
 local KillAll = Divider:Button{
    Name = "Dodge",
    Description = "Kills all the players in the game!",
    Callback = function()
        local Enabled = true
 
-       -- Configuration settings
-       local COUNTER_MODE = false -- NOT RECOMMENDED
+       -- Configurações
+       local COUNTER_MODE = false -- NÃO RECOMENDADO
        local Legit = {
            Enabled = true,
            LightChance = 0.3,
@@ -40,7 +40,7 @@ local KillAll = Divider:Button{
        local States = workspace.States
        local Effect = require(game:GetService("ReplicatedStorage").Modules.EffectHelper)
 
-       -- Helper functions
+       -- Funções auxiliares
        local function get(n, s)
            return States[n.Name]:FindFirstChild(s, true).Value
        end
@@ -66,7 +66,7 @@ local KillAll = Divider:Button{
            return math.random(1, 100) / 100
        end
 
-       -- Queue management
+       -- Gerenciamento de fila
        local waiting = {}
 
        local function waitValid(name, func)
@@ -84,7 +84,7 @@ local KillAll = Divider:Button{
        end
 
        shared.BaseEffectFunction = shared.BaseEffectFunction or {}
-       
+
        for i, v in pairs(Effect) do
            shared.BaseEffectFunction[i] = shared.BaseEffectFunction[i] or v
            Effect[i] = function(d, ...)
@@ -120,5 +120,19 @@ local KillAll = Divider:Button{
                return shared.BaseEffectFunction[i](d, ...)
            end
        end
+
+       -- Suspender o movimento do mouse ao pressionar o botão do meio
+       UserInputService = game:GetService("UserInputService")
+       UserInputService.InputBegan:Connect(function(input)
+           if input.UserInputType == Enum.UserInputType.MouseButton3 then
+               Client.Character.HumanoidRootPart.Anchored = true
+           end
+       end)
+
+       UserInputService.InputEnded:Connect(function(input)
+           if input.UserInputType == Enum.UserInputType.MouseButton3 then
+               Client.Character.HumanoidRootPart.Anchored = false
+           end
+       end)
    end
 }
