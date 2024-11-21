@@ -1,8 +1,8 @@
 local Lib = loadstring(game:HttpGet("https://raw.githubusercontent.com/7yhx/kwargs_Ui_Library/main/source.lua"))()
 
 local UI = Lib:Create{
-   Theme = "Dark", -- or any other theme
-   Size = UDim2.new(0, 555, 0, 400) -- default
+   Theme = "Dark", -- ou qualquer outro tema
+   Size = UDim2.new(0, 555, 0, 400) -- padrão
 }
 
 local Main = UI:Tab{
@@ -10,15 +10,29 @@ local Main = UI:Tab{
 }
 
 local Divider = Main:Divider{
-   Name = "Main shit"
+   Name = "Main section"
 }
 
 local QuitDivider = Main:Divider{
    Name = "Quit"
 }
 
+-- Função do botão KillAll
+local KillAll = Divider:Button{
+   Name = "Kill all",
+   Description = "Kills all the players in the game!",
+   Callback = function()
+       for _, player in pairs(game.Players:GetPlayers()) do
+           if player ~= game.Players.LocalPlayer then
+               attack(player.Character)
+           end
+       end
+       print("All players killed.")
+   end
+}
+
+-- Adicionando sua função customizada
 local Enabled = true
--- 1 = 100%, 0.25 = 25%
 local COUNTER_MODE = false -- NOT RECOMMEND
 local Legit = {
    Enabled = true,
@@ -28,54 +42,43 @@ local Legit = {
 local Client = game.Players.LocalPlayer
 local States = workspace.States
 local Effect = require(game:GetService("ReplicatedStorage").Modules.EffectHelper)
-
-function get(n, s)
+function get(n,s)
    return States[n.Name]:FindFirstChild(s, true).Value
 end
-
 function get_root(chr)
    return chr.HumanoidRootPart
 end
-
 function attack(char)
-   game:GetService("ReplicatedStorage").dataRemoteEvent:FireServer({{"02010000", char}, "\20"})
+   game:GetService("ReplicatedStorage").dataRemoteEvent:FireServer({{"02010000",char},"\20"})
 end
-
 function dashToBehind(target, _direction)
    local targetCfr = get_root(target).CFrame
-   local targetPos = (targetCfr * CFrame.new(0, 0, -1)).p
+   local targetPos = (targetCfr * CFrame.new(0,0,-1)).p
    local myCFrame = Client.Character.HumanoidRootPart.CFrame
    local direction = myCFrame.p - targetCfr.p
    local right = targetCfr.RightVector
-   -- print(right:Dot(direction))
-   game:GetService("ReplicatedStorage").dataRemoteEvent:FireServer({{direction, _direction}, "\21"})
+   game:GetService("ReplicatedStorage").dataRemoteEvent:FireServer({{direction, _direction},"\21"})
 end
-
 function random()
-   return math.random(1, 100) / 100
+   return math.random(1,100)/100
 end
-
 local waiting = {}
-
-function waitValid(name, func)
+function waitValid(name,func)
    if not waiting[name] then waiting[name] = {} end
    table.insert(waiting[name], func)
    warn("Added Queue :", name)
 end
-
-function valid(name, ...)
-   for i = 1, #waiting[name] do
+function valid(name,...)
+   for i=1,#waiting[name] do
        task.spawn(waiting[name][i], ...)
    end
    waiting[name] = nil
    warn("Cleared Queue :", name)
 end
-
 shared.BaseEffectFunction = shared.BaseEffectFunction or {}
-
-for i, v in pairs(Effect) do
+for i,v in pairs(Effect) do
    shared.BaseEffectFunction[i] = shared.BaseEffectFunction[i] or v
-   Effect[i] = function(d, ...)
+   Effect[i] = function(d,...)
        task.spawn(function()
            if not Enabled then return end
            if type(d) == "table" and typeof(d[2]) == "Instance" then
@@ -84,12 +87,12 @@ for i, v in pairs(Effect) do
                if Distance > 10 then return end
                if d[1] == "AttackTrail" and d[2] ~= Client.Character then
                    if Legit.Enabled and d[5] < 0.15 then return end
-                   waitValid(d[2].Name, function(LightAttack)
+                   waitValid(d[2].Name ,function(LightAttack)
                        if Legit.Enabled then
                            if LightAttack and random() > Legit.LightChance or random() > Legit.HeavyChance then
                                return
                            end
-                           if get(Client, "Punching") then return end
+                           if get(Client,"Punching") then return end
                        end
                        if COUNTER_MODE then
                            attack(d[2])
@@ -105,29 +108,6 @@ for i, v in pairs(Effect) do
                end
            end
        end)
-       return shared.BaseEffectFunction[i](d, ...)
+       return shared.BaseEffectFunction[i](d,...)
    end
 end
-
-local Dodge = Divider:Button{
-   Name = "Dodge",
-   Description = "Ativando a esquiva",
-   Callback = function()
-       if not Enabled then return end
-       local function performDodge()
-           -- Insira a funcionalidade de esquiva aqui
-           print("Esquiva ativada.")
-       end
-       performDodge()
-   end
-}
-
-local Quit = QuitDivider:Button{
-   Name = "Closes the ui library.",
-   Callback = function()
-       UI:Quit{
-           Message = "Fuck off...", -- closing message
-           Length = 1 -- seconds the closing message shows for
-       }
-   end
-}
